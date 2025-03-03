@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bier Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        #beer-list { margin-top: 20px; }
+        .beer-item { padding: 10px; border: 1px solid #ccc; margin: 5px; display: flex; justify-content: space-between; align-items: center; }
+        .ratings { display: flex; flex-direction: column; align-items: center; }
+        select { margin: 5px; padding: 5px; font-size: 16px; }
+        canvas { max-width: 600px; margin: 20px auto; }
+    </style>
+</head>
+<body>
+    <h1>Bier Tracker</h1>
+    <input type="text" id="beer-name" placeholder="Voeg een bier toe">
+    <div class="ratings">
+        <label>Fruitig: <select id="fruitig"><option value='1'>1</option><option value='2'>2</option><option value='3'>3</option><option value='4'>4</option><option value='5'>5</option><option value='6'>6</option></select></label>
+        <label>Schuimend: <select id="schuimend"><option value='1'>1</option><option value='2'>2</option><option value='3'>3</option><option value='4'>4</option><option value='5'>5</option><option value='6'>6</option></select></label>
+        <label>20 op een avond?: <select id="twenty"><option value='1'>1</option><option value='2'>2</option><option value='3'>3</option><option value='4'>4</option><option value='5'>5</option><option value='6'>6</option></select></label>
+        <label>Happy dronken?: <select id="happy"><option value='1'>1</option><option value='2'>2</option><option value='3'>3</option><option value='4'>4</option><option value='5'>5</option><option value='6'>6</option></select></label>
+        <label>Krat kopen?: <select id="krat"><option value='1'>1</option><option value='2'>2</option><option value='3'>3</option><option value='4'>4</option><option value='5'>5</option><option value='6'>6</option></select></label>
+        <label>Past bij stijl?: <select id="style"><option value='1'>1</option><option value='2'>2</option><option value='3'>3</option><option value='4'>4</option><option value='5'>5</option><option value='6'>6</option></select></label>
+    </div>
+    <button onclick="addBeer()">Toevoegen</button>
+    <div id="beer-list"></div>
+    <canvas id="beerChart"></canvas>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", loadBeers);
+
+        function addBeer() {
+            let beerName = document.getElementById("beer-name").value;
+            if (beerName.trim() === "") return;
+            let beer = {
+                name: beerName,
+                ratings: {
+                    fruitig: parseInt(document.getElementById("fruitig").value),
+                    schuimend: parseInt(document.getElementById("schuimend").value),
+                    twenty: parseInt(document.getElementById("twenty").value),
+                    happy: parseInt(document.getElementById("happy").value),
+                    krat: parseInt(document.getElementById("krat").value),
+                    style: parseInt(document.getElementById("style").value)
+                }
+            };
+            beer.totalScore = Object.values(beer.ratings).reduce((a, b) => a + b, 0);
+            let beers = JSON.parse(localStorage.getItem("beers")) || [];
+            beers.push(beer);
+            localStorage.setItem("beers", JSON.stringify(beers));
+            document.getElementById("beer-name").value = "";
+            loadBeers();
+        }
+
+        function loadBeers() {
+            let beerList = document.getElementById("beer-list");
+            beerList.innerHTML = "";
+            let beers = JSON.parse(localStorage.getItem("beers")) || [];
+            beers.sort((a, b) => b.totalScore - a.totalScore);
+            beers.forEach((beer, index) => {
+                let div = document.createElement("div");
+                div.classList.add("beer-item");
+                div.innerHTML = `<span>${beer.name} (Score: ${beer.totalScore})</span> <button onclick="removeBeer(${index})">Verwijderen</button>`;
+                beerList.appendChild(div);
+            });
+            updateChart(beers);
+        }
+
+        function removeBeer(index) {
+            let beers = JSON.parse(localStorage.getItem("beers")) || [];
+            beers.splice(index, 1);
+            localStorage.setItem("beers", JSON.stringify(beers));
+            loadBeers();
+        }
+
+        function updateChart(beers) {
+            let ctx = document.getElementById('beerChart').getContext('2d');
+            if (window.beerChartInstance) {
+                window.beerChartInstance.destroy();
+            }
+            window.beerChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: beers.map(b => b.name),
+                    datasets: [{
+                        label: 'Totale Score',
+                        data: beers.map(b => b.totalScore),
+                        backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: { beginAtZero: true, max: 36 }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
